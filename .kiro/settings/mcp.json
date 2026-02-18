@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "stock-market-analyzer": {
+      "command": "/opt/homebrew/bin/python3",
+      "args": ["/Users/anshikagupta/Sementic_analysis/mcp_server.py"],
+      "env": {
+        "ALPHA_VANTAGE_API_KEY": "78XX5FJBIUZP6NVG",
+        "FINNHUB_API_KEY": "d6adai9r01qqjvbq1mbgd6adai9r01qqjvbq1mc0"
+      },
+      "disabled": false,
+      "autoApprove": ["get_stock_quote", "get_best_quote", "compare_stock_sources", "get_multiple_quotes"]
+    }
+  }
+}

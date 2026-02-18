@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📈 Stock Market Analyzer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .control-panel {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .input-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .sources {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+        
+        .checkbox-label input {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+            width: 100%;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .results {
+            display: grid;
+            gap: 20px;
+        }
+        
+        .stock-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .stock-header {
+            font-size: 1.8em;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #333;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+        
+        .source-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .source-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .source-card.error {
+            border-left-color: #e74c3c;
+            background: #fee;
+        }
+        
+        .source-name {
+            font-size: 0.9em;
+            color: #666;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        .price {
+            font-size: 2em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .change {
+            font-size: 1.1em;
+            font-weight: 600;
+        }
+        
+        .change.positive {
+            color: #27ae60;
+        }
+        
+        .change.negative {
+            color: #e74c3c;
+        }
+        
+        .volume {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 10px;
+        }
+        
+        .error-message {
+            color: #e74c3c;
+            font-weight: 600;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: white;
+            font-size: 1.2em;
+        }
+        
+        .timestamp {
+            text-align: center;
+            color: white;
+            margin-top: 20px;
+            font-size: 0.9em;
+        }
+        
+        @media (max-width: 768px) {
+            .sources {
+                flex-direction: column;
+            }
+            
+            .source-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📈 Stock Market Analyzer</h1>
+            <p>Real-time data from multiple sources</p>
+        </div>
+        
+        <div class="control-panel">
+            <div class="input-group">
+                <label for="symbols">Stock Symbols (comma-separated)</label>
+                <input type="text" id="symbols" placeholder="AAPL, GOOGL, MSFT, TSLA" value="AAPL,GOOGL,MSFT">
+            </div>
+            
+            <div class="input-group">
+                <label>Data Sources</label>
+                <div class="sources">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="yahoo" checked>
+                        <span>Yahoo Finance</span>
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="alphavantage" checked>
+                        <span>Alpha Vantage</span>
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="finnhub" checked>
+                        <span>Finnhub</span>
+                    </label>
+                </div>
+            </div>
+            
+            <button class="btn" onclick="fetchData()">🔍 Get Stock Data</button>
+        </div>
+        
+        <div id="loading" class="loading" style="display: none;">
+            Loading data...
+        </div>
+        
+        <div id="results" class="results"></div>
+        
+        <div id="timestamp" class="timestamp"></div>
+    </div>
+    
+    <script>
+        async function fetchData() {
+            const symbolsInput = document.getElementById('symbols').value;
+            const symbols = symbolsInput.split(',').map(s => s.trim()).filter(s => s);
+            
+            if (symbols.length === 0) {
+                alert('Please enter at least one stock symbol');
+                return;
+            }
+            
+            const sources = [];
+            if (document.getElementById('yahoo').checked) sources.push('yahoo');
+            if (document.getElementById('alphavantage').checked) sources.push('alphavantage');
+            if (document.getElementById('finnhub').checked) sources.push('finnhub');
+            
+            if (sources.length === 0) {
+                alert('Please select at least one data source');
+                return;
+            }
+            
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('results').innerHTML = '';
+            document.getElementById('timestamp').innerHTML = '';
+            
+            try {
+                const response = await fetch('/api/quote', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ symbols, sources })
+                });
+                
+                const data = await response.json();
+                displayResults(data);
+            } catch (error) {
+                alert('Error fetching data: ' + error.message);
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+        
+        function displayResults(data) {
+            const resultsDiv = document.getElementById('results');
+            const timestampDiv = document.getElementById('timestamp');
+            
+            resultsDiv.innerHTML = '';
+            
+            for (const [symbol, sources] of Object.entries(data.results)) {
+                const stockCard = document.createElement('div');
+                stockCard.className = 'stock-card';
+                
+                let html = `<div class="stock-header">${symbol}</div>`;
+                html += '<div class="source-grid">';
+                
+                for (const [sourceName, quote] of Object.entries(sources)) {
+                    if (quote.error) {
+                        html += `
+                            <div class="source-card error">
+                                <div class="source-name">${sourceName}</div>
+                                <div class="error-message">❌ ${quote.error}</div>
+                            </div>
+                        `;
+                    } else {
+                        const price = quote.price;
+                        const change = quote.change || 0;
+                        const changePct = quote.change_percent || 0;
+                        const changeClass = change >= 0 ? 'positive' : 'negative';
+                        const arrow = change >= 0 ? '📈' : '📉';
+                        
+                        html += `
+                            <div class="source-card">
+                                <div class="source-name">${sourceName}</div>
+                                <div class="price">$${typeof price === 'number' ? price.toFixed(2) : price}</div>
+                                <div class="change ${changeClass}">
+                                    ${arrow} ${typeof change === 'number' ? change.toFixed(2) : change} 
+                                    (${typeof changePct === 'number' ? changePct.toFixed(2) : changePct}%)
+                                </div>
+                                ${quote.volume ? `<div class="volume">Volume: ${quote.volume.toLocaleString()}</div>` : ''}
+                            </div>
+                        `;
+                    }
+                }
+                
+                html += '</div>';
+                stockCard.innerHTML = html;
+                resultsDiv.appendChild(stockCard);
+            }
+            
+            timestampDiv.innerHTML = `Last updated: ${data.timestamp}`;
+        }
+        
+        // Allow Enter key to submit
+        document.getElementById('symbols').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                fetchData();
+            }
+        });
+        
+        // Load data on page load
+        window.addEventListener('load', fetchData);
+    </script>
+</body>
+</html>

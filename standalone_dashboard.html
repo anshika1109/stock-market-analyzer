@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📈 Stock Market Analyzer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .control-panel {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .input-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .results {
+            display: grid;
+            gap: 20px;
+        }
+        
+        .stock-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .stock-header {
+            font-size: 1.8em;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #333;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+        
+        .source-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+        
+        .source-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .source-name {
+            font-size: 0.9em;
+            color: #666;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        .price {
+            font-size: 2em;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .change {
+            font-size: 1.1em;
+            font-weight: 600;
+            margin-top: 5px;
+        }
+        
+        .change.positive {
+            color: #27ae60;
+        }
+        
+        .change.negative {
+            color: #e74c3c;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: white;
+            font-size: 1.2em;
+        }
+        
+        .note {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📈 Stock Market Analyzer</h1>
+            <p>Real-time data using Yahoo Finance API</p>
+        </div>
+        
+        <div class="note">
+            <strong>Note:</strong> This standalone version uses Yahoo Finance only. For multi-source comparison, use the Python backend (web_dashboard.py).
+        </div>
+        
+        <div class="control-panel">
+            <div class="input-group">
+                <label for="symbols">Stock Symbols (comma-separated)</label>
+                <input type="text" id="symbols" placeholder="AAPL, GOOGL, MSFT, TSLA" value="AAPL,GOOGL,MSFT">
+            </div>
+            
+            <button class="btn" onclick="fetchData()">🔍 Get Stock Data</button>
+        </div>
+        
+        <div id="loading" class="loading" style="display: none;">
+            Loading data...
+        </div>
+        
+        <div id="results" class="results"></div>
+    </div>
+    
+    <script>
+        async function fetchData() {
+            const symbolsInput = document.getElementById('symbols').value;
+            const symbols = symbolsInput.split(',').map(s => s.trim().toUpperCase()).filter(s => s);
+            
+            if (symbols.length === 0) {
+                alert('Please enter at least one stock symbol');
+                return;
+            }
+            
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('results').innerHTML = '';
+            
+            const resultsDiv = document.getElementById('results');
+            
+            for (const symbol of symbols) {
+                try {
+                    // Using a CORS proxy to access Yahoo Finance
+                    const proxyUrl = 'https://api.allorigins.win/raw?url=';
+                    const apiUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}`;
+                    const response = await fetch(proxyUrl + encodeURIComponent(apiUrl));
+                    const data = await response.json();
+                    
+                    if (data.chart && data.chart.result && data.chart.result[0]) {
+                        const result = data.chart.result[0];
+                        const meta = result.meta;
+                        
+                        const price = meta.regularMarketPrice;
+                        const previousClose = meta.chartPreviousClose || meta.previousClose;
+                        const change = price - previousClose;
+                        const changePct = (change / previousClose) * 100;
+                        
+                        displayStock(symbol, {
+                            price: price,
+                            change: change,
+                            changePct: changePct,
+                            volume: meta.regularMarketVolume,
+                            high: meta.regularMarketDayHigh,
+                            low: meta.regularMarketDayLow
+                        });
+                    } else {
+                        displayError(symbol, 'No data available');
+                    }
+                } catch (error) {
+                    displayError(symbol, error.message);
+                }
+            }
+            
+            document.getElementById('loading').style.display = 'none';
+        }
+        
+        function displayStock(symbol, data) {
+            const resultsDiv = document.getElementById('results');
+            const stockCard = document.createElement('div');
+            stockCard.className = 'stock-card';
+            
+            const changeClass = data.change >= 0 ? 'positive' : 'negative';
+            const arrow = data.change >= 0 ? '📈' : '📉';
+            
+            stockCard.innerHTML = `
+                <div class="stock-header">${symbol}</div>
+                <div class="source-grid">
+                    <div class="source-card">
+                        <div class="source-name">Yahoo Finance</div>
+                        <div class="price">$${data.price.toFixed(2)}</div>
+                        <div class="change ${changeClass}">
+                            ${arrow} ${data.change.toFixed(2)} (${data.changePct.toFixed(2)}%)
+                        </div>
+                    </div>
+                    <div class="source-card">
+                        <div class="source-name">Day Range</div>
+                        <div class="price" style="font-size: 1.3em;">
+                            $${data.low.toFixed(2)} - $${data.high.toFixed(2)}
+                        </div>
+                        <div style="margin-top: 10px; color: #666;">
+                            Volume: ${data.volume.toLocaleString()}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            resultsDiv.appendChild(stockCard);
+        }
+        
+        function displayError(symbol, error) {
+            const resultsDiv = document.getElementById('results');
+            const stockCard = document.createElement('div');
+            stockCard.className = 'stock-card';
+            
+            stockCard.innerHTML = `
+                <div class="stock-header">${symbol}</div>
+                <div style="color: #e74c3c; padding: 20px; text-align: center;">
+                    ❌ Error: ${error}
+                </div>
+            `;
+            
+            resultsDiv.appendChild(stockCard);
+        }
+        
+        document.getElementById('symbols').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                fetchData();
+            }
+        });
+        
+        window.addEventListener('load', fetchData);
+    </script>
+</body>
+</html>
