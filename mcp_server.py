@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 MCP Server for Stock Market Analyzer
-Provides real-time stock data from multiple sources via MCP protocol
+Provides real-time stock data and news analysis via MCP protocol
 """
 
 import asyncio
@@ -12,9 +12,11 @@ import mcp.types as types
 from mcp.server import NotificationOptions, Server
 import mcp.server.stdio
 from analyzer import StockAnalyzer
+from news_analyzer import NewsAnalyzer
 
-# Initialize the analyzer
-analyzer = StockAnalyzer()
+# Initialize the analyzers
+stock_analyzer = StockAnalyzer()
+news_analyzer = NewsAnalyzer()
 
 # Create MCP server instance
 server = Server("stock-market-analyzer")
@@ -97,6 +99,80 @@ async def handle_list_tools() -> list[types.Tool]:
                 },
                 "required": ["symbols"]
             }
+        ),
+        types.Tool(
+            name="get_stock_news",
+            description="Get recent news articles for a stock symbol from multiple sources",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "symbol": {
+                        "type": "string",
+                        "description": "Stock symbol (e.g., AAPL, GOOGL, MSFT)"
+                    },
+                    "sources": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "enum": ["finnhub", "alphavantage", "yahoo"]
+                        },
+                        "description": "News sources to query (default: all sources)",
+                        "default": ["finnhub", "alphavantage", "yahoo"]
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of articles per source (default: 10)",
+                        "default": 10
+                    }
+                },
+                "required": ["symbol"]
+            }
+        ),
+        types.Tool(
+            name="analyze_news_sentiment",
+            description="Analyze overall sentiment from recent news articles for a stock",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "symbol": {
+                        "type": "string",
+                        "description": "Stock symbol (e.g., AAPL, GOOGL, MSFT)"
+                    }
+                },
+                "required": ["symbol"]
+            }
+        ),
+        types.Tool(
+            name="correlate_news_with_price",
+            description="Correlate news sentiment with stock price movement to understand if news explains price changes",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "symbol": {
+                        "type": "string",
+                        "description": "Stock symbol (e.g., AAPL, GOOGL, MSFT)"
+                    },
+                    "price_change": {
+                        "type": "number",
+                        "description": "Price change amount (e.g., 5.25 for $5.25 increase, -3.50 for $3.50 decrease)"
+                    }
+                },
+                "required": ["symbol", "price_change"]
+            }
+        ),
+        types.Tool(
+            name="get_news_summary",
+            description="Get a formatted text summary of recent news and sentiment for a stock",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "symbol": {
+                        "type": "string",
+                        "description": "Stock symbol (e.g., AAPL, GOOGL, MSFT)"
+                    }
+                },
+                "required": ["symbol"]
+            }
         )
     ]
 
@@ -117,7 +193,7 @@ async def handle_call_tool(
             if not symbol:
                 raise ValueError("Symbol is required")
             
-            result = analyzer.get_quote(symbol, sources=sources)
+            result = stock_analyzer.get_quote(symbol, sources=sources)
             
             return [
                 types.TextContent(
@@ -132,7 +208,7 @@ async def handle_call_tool(
             if not symbol:
                 raise ValueError("Symbol is required")
             
-            df = analyzer.compare_sources(symbol)
+            df = stock_analyzer.compare_sources(symbol)
             
             if df.empty:
                 result = {"error": "No data available from any source", "symbol": symbol}
@@ -155,7 +231,7 @@ async def handle_call_tool(
             if not symbol:
                 raise ValueError("Symbol is required")
             
-            result = analyzer.get_best_quote(symbol)
+            result = stock_analyzer.get_best_quote(symbol)
             
             return [
                 types.TextContent(
@@ -174,12 +250,77 @@ async def handle_call_tool(
             results = {}
             for symbol in symbols:
                 symbol = symbol.upper()
-                results[symbol] = analyzer.get_quote(symbol, sources=sources)
+                results[symbol] = stock_analyzer.get_quote(symbol, sources=sources)
             
             return [
                 types.TextContent(
                     type="text",
                     text=json.dumps(results, indent=2)
+                )
+            ]
+        
+        elif name == "get_stock_news":
+            symbol = arguments.get("symbol", "").upper()
+            sources = arguments.get("sources", ["finnhub", "alphavantage", "yahoo"])
+            limit = arguments.get("limit", 10)
+            
+            if not symbol:
+                raise ValueError("Symbol is required")
+            
+            result = news_analyzer.get_news(symbol, sources=sources, limit=limit)
+            
+            return [
+                types.TextContent(
+                    type="text",
+                    text=json.dumps(result, indent=2)
+                )
+            ]
+        
+        elif name == "analyze_news_sentiment":
+            symbol = arguments.get("symbol", "").upper()
+            
+            if not symbol:
+                raise ValueError("Symbol is required")
+            
+            result = news_analyzer.analyze_sentiment(symbol)
+            
+            return [
+                types.TextContent(
+                    type="text",
+                    text=json.dumps(result, indent=2)
+                )
+            ]
+        
+        elif name == "correlate_news_with_price":
+            symbol = arguments.get("symbol", "").upper()
+            price_change = arguments.get("price_change")
+            
+            if not symbol:
+                raise ValueError("Symbol is required")
+            if price_change is None:
+                raise ValueError("Price change is required")
+            
+            result = news_analyzer.correlate_with_price(symbol, float(price_change))
+            
+            return [
+                types.TextContent(
+                    type="text",
+                    text=json.dumps(result, indent=2)
+                )
+            ]
+        
+        elif name == "get_news_summary":
+            symbol = arguments.get("symbol", "").upper()
+            
+            if not symbol:
+                raise ValueError("Symbol is required")
+            
+            result = news_analyzer.get_news_summary(symbol)
+            
+            return [
+                types.TextContent(
+                    type="text",
+                    text=result
                 )
             ]
         

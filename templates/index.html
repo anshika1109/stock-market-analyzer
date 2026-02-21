@@ -201,6 +201,88 @@
             font-size: 0.9em;
         }
         
+        .news-section {
+            margin-top: 30px;
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .news-header {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #333;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+        
+        .sentiment-summary {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .sentiment-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: 600;
+            margin-right: 10px;
+        }
+        
+        .sentiment-positive {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .sentiment-negative {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .sentiment-neutral {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        
+        .news-item {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .news-headline {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+        }
+        
+        .news-meta {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 8px;
+        }
+        
+        .news-summary {
+            color: #555;
+            line-height: 1.5;
+        }
+        
+        .correlation-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
         @media (max-width: 768px) {
             .sources {
                 flex-direction: column;
@@ -243,7 +325,7 @@
                 </div>
             </div>
             
-            <button class="btn" onclick="fetchData()">🔍 Get Stock Data</button>
+            <button class="btn" onclick="fetchAll()">🔍 Get Stock Data & News Analysis</button>
         </div>
         
         <div id="loading" class="loading" style="display: none;">
@@ -252,11 +334,13 @@
         
         <div id="results" class="results"></div>
         
+        <div id="news-results" class="results"></div>
+        
         <div id="timestamp" class="timestamp"></div>
     </div>
     
     <script>
-        async function fetchData() {
+        async function fetchAll() {
             const symbolsInput = document.getElementById('symbols').value;
             const symbols = symbolsInput.split(',').map(s => s.trim()).filter(s => s);
             
@@ -277,10 +361,12 @@
             
             document.getElementById('loading').style.display = 'block';
             document.getElementById('results').innerHTML = '';
+            document.getElementById('news-results').innerHTML = '';
             document.getElementById('timestamp').innerHTML = '';
             
             try {
-                const response = await fetch('/api/quote', {
+                // Fetch stock data
+                const stockResponse = await fetch('/api/quote', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -288,8 +374,22 @@
                     body: JSON.stringify({ symbols, sources })
                 });
                 
-                const data = await response.json();
-                displayResults(data);
+                const stockData = await stockResponse.json();
+                displayResults(stockData);
+                
+                // Fetch news for each symbol
+                for (const symbol of symbols) {
+                    const newsResponse = await fetch('/api/news', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ symbol: symbol, limit: 10 })
+                    });
+                    
+                    const newsData = await newsResponse.json();
+                    displayNews(newsData);
+                }
             } catch (error) {
                 alert('Error fetching data: ' + error.message);
             } finally {
@@ -350,12 +450,99 @@
         // Allow Enter key to submit
         document.getElementById('symbols').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
-                fetchData();
+                fetchAll();
             }
         });
         
+        function displayNews(data) {
+            const newsDiv = document.getElementById('news-results');
+            const newsSection = document.createElement('div');
+            newsSection.className = 'news-section';
+            
+            let html = `<div class="news-header">📰 News Analysis: ${data.symbol}</div>`;
+            
+            // Correlation summary
+            if (data.correlation) {
+                const corr = data.correlation;
+                html += `
+                    <div class="correlation-box">
+                        <h3>Price-News Correlation</h3>
+                        <p><strong>Price Movement:</strong> ${corr.price_direction.toUpperCase()} ($${corr.price_change.toFixed(2)})</p>
+                        <p><strong>News Sentiment:</strong> ${corr.sentiment.toUpperCase()} (Score: ${corr.sentiment_score})</p>
+                        <p><strong>Correlation:</strong> ${corr.correlation.toUpperCase()}</p>
+                        <p>${corr.explanation}</p>
+                        <p><strong>Articles Analyzed:</strong> ${corr.article_count}</p>
+                    </div>
+                `;
+            }
+            
+            // Sentiment summary
+            if (data.sentiment) {
+                const sent = data.sentiment;
+                const sentimentClass = sent.overall_sentiment === 'positive' ? 'sentiment-positive' : 
+                                      sent.overall_sentiment === 'negative' ? 'sentiment-negative' : 
+                                      'sentiment-neutral';
+                
+                html += `
+                    <div class="sentiment-summary">
+                        <h3>Overall Sentiment</h3>
+                        <span class="sentiment-badge ${sentimentClass}">${sent.overall_sentiment.toUpperCase()}</span>
+                        <span>Score: ${sent.sentiment_score}</span>
+                        <p style="margin-top: 10px;">
+                            Positive: ${sent.positive_count} | 
+                            Negative: ${sent.negative_count} | 
+                            Neutral: ${sent.neutral_count} | 
+                            Total: ${sent.total_articles}
+                        </p>
+                    </div>
+                `;
+            }
+            
+            // News articles
+            if (data.news && data.news.length > 0) {
+                html += '<h3 style="margin-top: 20px; margin-bottom: 15px;">📊 Price-Related News (Filtered)</h3>';
+                html += '<p style="color: #666; margin-bottom: 15px;">Showing only news articles that discuss price movements, earnings, ratings, or market performance.</p>';
+                
+                data.news.slice(0, 10).forEach((article, index) => {
+                    if (!article.error) {
+                        const sentimentEmoji = {
+                            'positive': '📈',
+                            'bullish': '📈',
+                            'somewhat-bullish': '📈',
+                            'negative': '📉',
+                            'bearish': '📉',
+                            'somewhat-bearish': '📉',
+                            'neutral': '➡️'
+                        }[article.sentiment.toLowerCase()] || '➡️';
+                        
+                        html += `
+                            <div class="news-item">
+                                <div class="news-headline">${sentimentEmoji} ${article.headline}</div>
+                                <div class="news-meta">
+                                    <strong>📡 Data Source:</strong> ${article.data_source || article.provider} | 
+                                    <strong>Publisher:</strong> ${article.source} | 
+                                    ${article.datetime}
+                                    ${article.sentiment ? ` | <strong>Sentiment:</strong> ${article.sentiment.toUpperCase()}` : ''}
+                                    ${article.relevance_score ? ` | <strong>Relevance:</strong> ${(article.relevance_score * 100).toFixed(0)}%` : ''}
+                                </div>
+                                ${article.summary && article.summary !== 'No summary' ? 
+                                    `<div class="news-summary">${article.summary}</div>` : ''}
+                                ${article.url && article.url !== '' ? 
+                                    `<a href="${article.url}" target="_blank" style="color: #667eea; text-decoration: none;">Read more →</a>` : ''}
+                            </div>
+                        `;
+                    }
+                });
+            } else {
+                html += '<p>No news articles found.</p>';
+            }
+            
+            newsSection.innerHTML = html;
+            newsDiv.appendChild(newsSection);
+        }
+        
         // Load data on page load
-        window.addEventListener('load', fetchData);
+        window.addEventListener('load', fetchAll);
     </script>
 </body>
 </html>

@@ -1,18 +1,20 @@
-# 📈 Stock Market Real-Time Analyzer
+# 📈 Stock Market Real-Time Analyzer with News Sentiment Analysis
 
-A comprehensive Python tool for fetching and analyzing real-time stock market data from multiple public APIs. Features include a command-line interface, web dashboards, and an MCP (Model Context Protocol) server for AI assistant integration.
+A comprehensive Python tool for fetching and analyzing real-time stock market data from multiple public APIs, with integrated news sentiment analysis to understand how news impacts stock prices. Features include a command-line interface, web dashboards, and an MCP (Model Context Protocol) server for AI assistant integration.
 
 ## ✨ Features
 
 - **Multi-Source Data Fetching**: Get stock data from Yahoo Finance, Alpha Vantage, and Finnhub
-- **Real-Time Analysis**: Compare prices across different sources
+- **News Sentiment Analysis**: Analyze news articles and their impact on stock prices
+- **News-Price Correlation**: Understand if news sentiment aligns with price movements
+- **Real-Time Analysis**: Compare prices and news across different sources
 - **Multiple Interfaces**:
-  - Command-line tool
+  - Command-line tool for stocks and news
   - Web dashboard (Flask)
   - Standalone HTML dashboard
   - Streamlit dashboard
   - MCP server for AI assistants (Claude, Kiro)
-- **Comprehensive Data**: Price, change, volume, market cap, day high/low, and more
+- **Comprehensive Data**: Price, change, volume, market cap, day high/low, news sentiment, and more
 - **Easy Integration**: Works with Claude Desktop and other MCP-compatible clients
 
 ## 🚀 Quick Start
@@ -30,9 +32,24 @@ pip install -r requirements.txt
 
 ### Basic Usage
 
-**Command Line:**
+**Stock Prices (Command Line):**
 ```bash
 python main.py AAPL GOOGL MSFT
+```
+
+**News Analysis (Command Line):**
+```bash
+# Get recent news
+python news_cli.py AAPL
+
+# Analyze sentiment
+python news_cli.py AAPL sentiment
+
+# Correlate news with price movement
+python news_cli.py AAPL correlate
+
+# Get news summary
+python news_cli.py AAPL summary
 ```
 
 **Standalone Dashboard:**
@@ -74,6 +91,8 @@ Use this tool with AI assistants like Claude Desktop or Kiro.
 2. Restart Claude Desktop
 
 3. Ask Claude: "Get the stock price for AAPL"
+4. Ask Claude: "Analyze news sentiment for TSLA"
+5. Ask Claude: "Why did AAPL stock go up today?"
 
 See [CLAUDE_DESKTOP_SETUP.md](CLAUDE_DESKTOP_SETUP.md) for detailed instructions.
 
@@ -82,10 +101,12 @@ See [CLAUDE_DESKTOP_SETUP.md](CLAUDE_DESKTOP_SETUP.md) for detailed instructions
 The MCP server is pre-configured in `.kiro/settings/mcp.json`. Just restart Kiro and ask:
 - "Get the stock price for AAPL"
 - "Compare TSLA across all sources"
+- "What's the news sentiment for NVDA?"
+- "Why did GOOGL stock drop today?"
 
 ## 📊 Available Tools
 
-### Command Line
+### Command Line - Stock Prices
 ```bash
 # Single stock
 python main.py AAPL
@@ -97,23 +118,48 @@ python main.py AAPL GOOGL MSFT TSLA
 python main.py
 ```
 
+### Command Line - News Analysis
+```bash
+# Get recent news articles
+python news_cli.py AAPL news
+
+# Analyze overall sentiment
+python news_cli.py AAPL sentiment
+
+# Correlate news with price movement
+python news_cli.py AAPL correlate
+
+# Get formatted summary
+python news_cli.py AAPL summary
+```
+
 ### MCP Server Tools
 
 When integrated with AI assistants, you get access to:
 
+**Stock Data:**
 1. **get_stock_quote** - Get quote from specific sources
 2. **compare_stock_sources** - Compare data across all sources
 3. **get_best_quote** - Get most reliable quote
 4. **get_multiple_quotes** - Get quotes for multiple symbols
 
+**News Analysis:**
+5. **get_stock_news** - Get recent news articles
+6. **analyze_news_sentiment** - Analyze overall sentiment
+7. **correlate_news_with_price** - Correlate news with price movement
+8. **get_news_summary** - Get formatted news summary
+
 ## 🏗️ Project Structure
 
 ```
 .
-├── analyzer.py              # Core analysis logic
-├── data_sources.py          # API integrations
+├── analyzer.py              # Core stock analysis logic
+├── news_analyzer.py         # News sentiment analysis
+├── data_sources.py          # Stock API integrations
+├── news_sources.py          # News API integrations
 ├── config.py                # Configuration management
-├── main.py                  # CLI interface
+├── main.py                  # CLI interface for stocks
+├── news_cli.py              # CLI interface for news
 ├── mcp_server.py            # MCP server for AI integration
 ├── web_dashboard.py         # Flask web server
 ├── dashboard.py             # Streamlit dashboard
@@ -152,9 +198,11 @@ When integrated with AI assistants, you get access to:
 
 - **Real-time stock monitoring** - Track multiple stocks simultaneously
 - **Price comparison** - Verify prices across different data sources
-- **AI assistant integration** - Ask AI for stock data in natural language
+- **News sentiment analysis** - Understand market sentiment from news
+- **News-price correlation** - See if news explains price movements
+- **AI assistant integration** - Ask AI for stock data and news analysis in natural language
 - **Data analysis** - Export data for further analysis
-- **Portfolio tracking** - Monitor your investments
+- **Portfolio tracking** - Monitor your investments with news context
 
 ## 🤝 Contributing
 

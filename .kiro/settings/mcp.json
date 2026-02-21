@@ -8,7 +8,16 @@
         "FINNHUB_API_KEY": "d6adai9r01qqjvbq1mbgd6adai9r01qqjvbq1mc0"
       },
       "disabled": false,
-      "autoApprove": ["get_stock_quote", "get_best_quote", "compare_stock_sources", "get_multiple_quotes"]
+      "autoApprove": [
+        "get_stock_quote",
+        "get_best_quote",
+        "compare_stock_sources",
+        "get_multiple_quotes",
+        "get_stock_news",
+        "analyze_news_sentiment",
+        "correlate_news_with_price",
+        "get_news_summary"
+      ]
     }
   }
 }
